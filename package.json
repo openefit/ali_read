@@ -6,9 +6,6 @@
   "repository": "https://github.com/openefit/ali_read",
   "author": "openefit <openefit@163.com>",
   "license": "MIT",
-  "scripts": {
-    "install": "cmake-js compile"
-  },
   "devDependencies": {
     "cmake-js": "^6.0.0"
   },
