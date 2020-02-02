@@ -6,7 +6,7 @@ include_directories(${CMAKE_SOURCE_DIR}/demo/include)
 
 link_directories(${CMAKE_SOURCE_DIR}/lib)
 link_directories(${CMAKE_SOURCE_DIR}/demo/lib)
-file(GLOB SOURCE_FILES "speechSynthesizerDemo.cpp")
+file(GLOB SOURCE_FILES "speech.cpp")
 add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES} ${CMAKE_JS_SRC})
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "" SUFFIX ".node")
 target_link_libraries(${PROJECT_NAME} ${CMAKE_JS_LIB})
