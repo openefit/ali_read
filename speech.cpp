@@ -69,7 +69,19 @@ std::string g_appkey = "";
 std::string g_akId = "";
 std::string g_akSecret = "";
 std::string g_token = "";
+
+std::string g_path = "/home/chen/own/resources/audio";
+std::string g_voice = "ruoxi";     // 发音人, 包含"xiaoyun", "ruoxi", "xiaogang"等. 可选参数,
+short g_volumn = 100;  			    // 音量, 范围是0~100, 可选参数, 默认50
+std::string g_format = "mp3";			  // 音频编码格式, 可选参数, 默认是wav. 支持的格式pcm, wav, mp3
+short g_sample_rate = 16000;    // 音频采样率, 包含8000, 16000. 可选参数, 默认是16000
+short g_speech_rate = 500;		  // 语速, 范围是-500~500, 可选参数, 默认是0
+short g_pitch_rate = -300;		  // 语调, 范围是-500~500, 可选参数, 默认是0
 long g_expireTime = -1;
+
+std::string g_text = "未收到文字，请检查";
+std::string g_audioName = "0";
+std::string p_audioFile = g_path.append("/tts-").append(g_audioName).append(".mp3");
 
 uint64_t getNow() {
 	struct timeval now;
@@ -197,12 +209,15 @@ void* pthreadFunc(void* arg) {
 
 	request->setAppKey(tst->appkey.c_str());
 	request->setText(tst->text.c_str()); // 设置待合成文本, 必填参数. 文本内容必须为UTF-8编码
-    request->setVoice("siqi"); 			 // 发音人, 包含"xiaoyun", "ruoxi", "xiaogang"等. 可选参数, 默认是xiaoyun，具体可用发音人可以参考文档介绍
-    request->setVolume(50); 			 // 音量, 范围是0~100, 可选参数, 默认50
-    request->setFormat("wav");			 // 音频编码格式, 可选参数, 默认是wav. 支持的格式pcm, wav, mp3
-    request->setSampleRate(8000); 		 // 音频采样率, 包含8000, 16000. 可选参数, 默认是16000
-    request->setSpeechRate(0); 			 // 语速, 范围是-500~500, 可选参数, 默认是0
-    request->setPitchRate(0); 			 // 语调, 范围是-500~500, 可选参数, 默认是0
+    request->setVoice(g_voice.c_str());
+    // 发音人, 包含"xiaoyun", "ruoxi", "xiaogang"等. 可选参数,
+    //默认是xiaoyun，具体可用发音人可以参考文档介绍
+    request->setVolume(g_volumn); 			 // 音量, 范围是0~100, 可选参数, 默认50
+    request->setFormat(g_format.c_str());
+    // 音频编码格式, 可选参数, 默认是wav. 支持的格式pcm, wav, mp3
+    request->setSampleRate(g_sample_rate); 		 // 音频采样率, 包含8000, 16000. 可选参数, 默认是16000
+    request->setSpeechRate(g_speech_rate); 			 // 语速, 范围是-500~500, 可选参数, 默认是0
+    request->setPitchRate(g_pitch_rate); 			 // 语调, 范围是-500~500, 可选参数, 默认是0
 	//request->setEnableSubtitle(true); 	 //是否开启字幕，非必须，需要注意的是并不是所有发音人都支持字幕功能
 	request->setToken(tst->token.c_str()); // 设置账号校验token, 必填参数
 
@@ -240,8 +255,8 @@ int speechSynthesizerFile(const char* appkey) {
     pa.appkey = appkey;
 
 	// 注意: Windows平台下，合成文本中如果包含中文，请将本CPP文件设置为带签名的UTF-8编码或者GB2312编码
-	pa.text = "要出去玩么？大胖！";
-    pa.audioFile = "out.mp3";
+	pa.text = g_text;
+    pa.audioFile = p_audioFile;
 
 	pthread_t pthreadId;
 	// 启动一个工作线程, 用于识别
@@ -289,8 +304,7 @@ int speechSynthesizerMultFile(const char* appkey) {
 	return 0;
 }
 
-void set(const FunctionCallbackInfo<Value>& args) {
-   printf("set start");
+void config(const FunctionCallbackInfo<Value>& args) {
    Isolate* isolate = args.GetIsolate();
 
    // 检查传入的参数的个数。
@@ -333,23 +347,48 @@ void set(const FunctionCallbackInfo<Value>& args) {
 //   g_appkey = (
 //   g_akId = args[1]->ToString();
 //   g_akSecret = args[2]->ToString();
-   printf("set end");
    return;
 }
 
 void read(const FunctionCallbackInfo<Value>& args) {
+
 	// 根据需要设置SDK输出日志, 可选. 此处表示SDK日志输出至log-Synthesizer.txt， LogDebug表示输出所有级别日志
-	printf("read start\n");
+  Isolate* isolate = args.GetIsolate();
+
+   // 检查传入的参数的个数。
+   if (args.Length() < 1) {
+     // 抛出一个错误并传回到 JavaScript。
+     isolate->ThrowException(Exception::TypeError(
+         String::NewFromUtf8(isolate,
+                         "参数的数量错误",
+                             NewStringType::kNormal).ToLocalChecked()));
+     return;
+   }
+
+//   g_appkey = *utfValue(args[0])
+//   g_appkey = std::string(args[0])
+   v8::Local<v8::String> fileName;
+   fileName = args[0]->ToString(isolate->GetCurrent());
+   char* charFileName = new char[8192];
+   (*fileName)->WriteUtf8(isolate, charFileName);
+   g_text.assign(charFileName);
+
+   if (args.Length() == 1) {
+      fileName = args[1]->ToString(isolate->GetCurrent());
+      charFileName = new char[8192];
+      (*fileName)->WriteUtf8(isolate, charFileName);
+      g_audioName.assign(charFileName);
+   }
+
 	int ret = NlsClient::getInstance()->setLogConfig("log-synthesizer", LogDebug);
 	if (-1 == ret) {
 		printf("set log failed\n");
 		return;
 	}
-	printf("nls start");
+
 	//启动工作线程
 	NlsClient::getInstance()->startWorkThread(4);
 
-  printf("read text start");
 	// 合成单个文本
 	speechSynthesizerFile(g_appkey.c_str());
 
@@ -358,14 +397,68 @@ void read(const FunctionCallbackInfo<Value>& args) {
 
 	// 所有工作完成，进程退出前，释放nlsClient. 请注意, releaseInstance()非线程安全.
 	NlsClient::releaseInstance();
-	printf("read end");
 	return;
 }
 
+void set(const FunctionCallbackInfo<Value>& args) {
+   Isolate* isolate = args.GetIsolate();
+
+   // 检查传入的参数的个数。
+   if (args.Length() < 6) {
+     // 抛出一个错误并传回到 JavaScript。
+     isolate->ThrowException(Exception::TypeError(
+         String::NewFromUtf8(isolate,
+                         "参数的数量错误",
+                             NewStringType::kNormal).ToLocalChecked()));
+     return;
+   }
+
+   // 检查参数的类型。
+   if (!args[0]->IsString() || !args[1]->IsNumber()
+       || !args[2]->IsString()) {
+     isolate->ThrowException(Exception::TypeError(
+         String::NewFromUtf8(isolate,
+                         "参数错误",
+                             NewStringType::kNormal).ToLocalChecked()));
+     return;
+   }
+
+    //std::string g_voice = "xiaoyun"     // 发音人, 包含"xiaoyun", "ruoxi", "xiaogang"等. 可选参数,
+    //std::short g_volumn = 100  			    // 音量, 范围是0~100, 可选参数, 默认50
+    //std::string g_format = "mp3"			  // 音频编码格式, 可选参数, 默认是wav. 支持的格式pcm, wav, mp3
+    //std::short g_sample_rate = 16000    // 音频采样率, 包含8000, 16000. 可选参数, 默认是16000
+    //std::short g_speech_rate = 500		  // 语速, 范围是-500~500, 可选参数, 默认是0
+    //std::short g_pitch_rate = -300		  // 语调, 范围是-500~500, 可选参数, 默认是0
+    //std::string g_path = "~/own/resources/audio"
+   v8::Local<v8::String> fileName;
+   fileName = args[0]->ToString(isolate->GetCurrent());
+   char* charFileName = new char[8192];
+   (*fileName)->WriteUtf8(isolate, charFileName);
+   g_voice.assign(charFileName);
+
+   g_volumn = args[1]->ToInteger(isolate->GetCurrent())->Value();
+
+   fileName = args[2]->ToString(isolate->GetCurrent());
+   charFileName = new char[8192];
+   (*fileName)->WriteUtf8(isolate, charFileName);
+   g_format.assign(charFileName);
+
+   g_sample_rate = args[3]->ToInteger(isolate->GetCurrent())->Value();
+   g_speech_rate = args[4]->ToInteger(isolate->GetCurrent())->Value();
+   g_pitch_rate = args[5]->ToInteger(isolate->GetCurrent())->Value();
+
+   if(args.Length() == 7) {
+      fileName = args[6]->ToString(isolate->GetCurrent());
+      charFileName = new char[8192];
+      (*fileName)->WriteUtf8(isolate, charFileName);
+      g_path.assign(charFileName);
+   }
+}
 
 void Initialize(Local<Object> exports) {
-  NODE_SET_METHOD(exports, "set", set);
+  NODE_SET_METHOD(exports, "config", config);
   NODE_SET_METHOD(exports, "read", read);
+  NODE_SET_METHOD(exports, "set", set);
 }
 
 NODE_MODULE(NODE_GYP_MODULE_NAME, Initialize)
