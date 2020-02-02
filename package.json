@@ -1,0 +1,20 @@
+{
+  "name": "ali_read",
+  "version": "0.0.1",
+  "description": "ali speech synthesizer; 阿里语音合成",
+  "main": "index.js",
+  "repository": "https://github.com/openefit/ali_read",
+  "author": "openefit <openefit@163.com>",
+  "license": "MIT",
+  "scripts": {
+    "install": "cmake-js compile"
+  },
+  "devDependencies": {
+    "cmake-js": "^6.0.0"
+  },
+  "cmake-js": {
+    "runtime": "electron",
+    "runtimeVersion": "electron-runtime-version-here",
+    "arch": "x_64"
+  }
+}
