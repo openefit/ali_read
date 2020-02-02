@@ -81,7 +81,6 @@ long g_expireTime = -1;
 
 std::string g_text = "未收到文字，请检查";
 std::string g_audioName = "0";
-std::string p_audioFile = g_path.append("/tts-").append(g_audioName).append(".mp3");
 
 uint64_t getNow() {
 	struct timeval now;
@@ -243,6 +242,7 @@ void* pthreadFunc(void* arg) {
 int speechSynthesizerFile(const char* appkey) {
 	//获取当前系统时间戳，判断token是否过期
     std::time_t curTime = std::time(0);
+    std::string p_audioFile = g_path.append("/").append(g_audioName).append(".mp3");
     if (g_expireTime - curTime < 10) {
 		printf("the token will be expired, please generate new token by AccessKey-ID and AccessKey-Secret.\n");
         if (-1 == generateToken(g_akId, g_akSecret, &g_token, &g_expireTime)) {
@@ -373,7 +373,7 @@ void read(const FunctionCallbackInfo<Value>& args) {
    (*fileName)->WriteUtf8(isolate, charFileName);
    g_text.assign(charFileName);
 
-   if (args.Length() == 1) {
+   if (args.Length() == 2) {
       fileName = args[1]->ToString(isolate->GetCurrent());
       charFileName = new char[8192];
       (*fileName)->WriteUtf8(isolate, charFileName);
