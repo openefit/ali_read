@@ -306,7 +306,7 @@ int speechSynthesizerMultFile(const char* appkey) {
 
 void config(const FunctionCallbackInfo<Value>& args) {
    Isolate* isolate = args.GetIsolate();
-
+   v8::HandleScope scope(isolate);
    // 检查传入的参数的个数。
    if (args.Length() < 3) {
      // 抛出一个错误并传回到 JavaScript。
@@ -326,16 +326,14 @@ void config(const FunctionCallbackInfo<Value>& args) {
      return;
    }
    v8::String::Utf8Value appkey(args[0]);
-   g_appkey = std::strtol(*appkey, nullptr, 8);
    v8::String::Utf8Value akId(args[1]);
-   g_akId = std::strtol(*akId, nullptr, 8);
    v8::String::Utf8Value akSecret(args[2]);
-   g_akSecret = std::strtol(*akSecret, nullptr, 8);
-   return;
+   g_appkey = *appkey;
+   g_akId = *akId;
+   g_akSecret = *akSecret;
 }
 
 void read(const FunctionCallbackInfo<Value>& args) {
-
 	// 根据需要设置SDK输出日志, 可选. 此处表示SDK日志输出至log-Synthesizer.txt， LogDebug表示输出所有级别日志
   Isolate* isolate = args.GetIsolate();
 
@@ -346,15 +344,15 @@ void read(const FunctionCallbackInfo<Value>& args) {
          String::NewFromUtf8(isolate,
                          "参数的数量错误",
                              NewStringType::kNormal).ToLocalChecked()));
-     return;
+     args.GetReturnValue().Set(v8::Number::New(isolate, -1));
    }
 
    v8::String::Utf8Value text(args[0]);
-   g_text = std::strtol(*text, nullptr, 8);
+   g_text = *text;
 
    if (args.Length() == 2) {
       v8::String::Utf8Value audioName(args[1]);
-      g_audioName = std::strtol(*audioName, nullptr, 8);
+      g_audioName = *audioName;
    }
 
 	int ret = NlsClient::getInstance()->setLogConfig("log-synthesizer", LogDebug);
@@ -371,10 +369,8 @@ void read(const FunctionCallbackInfo<Value>& args) {
 
 	// 合成多个文本
 	// speechSynthesizerMultFile(appkey.c_str());
-
-	// 所有工作完成，进程退出前，释放nlsClient. 请注意, releaseInstance()非线程安全.
 	NlsClient::releaseInstance();
-	return;
+	args.GetReturnValue().Set(v8::Number::New(isolate, 0));
 }
 
 void set(const FunctionCallbackInfo<Value>& args) {
@@ -408,12 +404,12 @@ void set(const FunctionCallbackInfo<Value>& args) {
     //g_pitch_rate = -300		  // 语调, 范围是-500~500, 可选参数, 默认是0
     //g_path = "~/own/resources/audio"
    v8::String::Utf8Value voice(args[0]);
-   g_voice = std::strtol(*voice, nullptr, 8);
+   g_voice = *voice;
 
    g_volumn = args[1] -> NumberValue();
 
    v8::String::Utf8Value format(args[2]);
-   g_format = std::strtol(*format, nullptr, 8);
+   g_format = *format;
 
    g_sample_rate = args[3]->NumberValue();
    g_speech_rate = args[4]->NumberValue();
@@ -421,7 +417,7 @@ void set(const FunctionCallbackInfo<Value>& args) {
 
    if(args.Length() == 7) {
       v8::String::Utf8Value path(args[6]);
-      g_path = std::strtol(*path, nullptr, 8);
+      g_path = *path;
    }
 }
 
