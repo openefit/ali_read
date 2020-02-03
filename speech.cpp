@@ -325,28 +325,12 @@ void config(const FunctionCallbackInfo<Value>& args) {
                              NewStringType::kNormal).ToLocalChecked()));
      return;
    }
-//   g_appkey = *utfValue(args[0])
-//   g_appkey = std::string(args[0])
-   v8::Local<v8::String> fileName;
-   fileName = args[0]->ToString(isolate->GetCurrent());
-   char* charFileName = new char[8192];
-   (*fileName)->WriteUtf8(isolate, charFileName);
-   g_appkey.assign(charFileName);
-
-   fileName = args[1]->ToString(isolate->GetCurrent());
-   charFileName = new char[8192];
-   (*fileName)->WriteUtf8(isolate, charFileName);
-   g_akId.assign(charFileName);
-
-   fileName = args[2]->ToString(isolate->GetCurrent());
-   charFileName = new char[8192];
-   (*fileName)->WriteUtf8(isolate, charFileName);
-   g_akSecret.assign(charFileName);
-   delete charFileName;
-
-//   g_appkey = (
-//   g_akId = args[1]->ToString();
-//   g_akSecret = args[2]->ToString();
+   v8::String::Utf8Value appkey(args[0]);
+   g_appkey = std::strtol(*appkey, nullptr, 8);
+   v8::String::Utf8Value akId(args[1]);
+   g_akId = std::strtol(*akId, nullptr, 8);
+   v8::String::Utf8Value akSecret(args[2]);
+   g_akSecret = std::strtol(*akSecret, nullptr, 8);
    return;
 }
 
@@ -365,19 +349,12 @@ void read(const FunctionCallbackInfo<Value>& args) {
      return;
    }
 
-//   g_appkey = *utfValue(args[0])
-//   g_appkey = std::string(args[0])
-   v8::Local<v8::String> fileName;
-   fileName = args[0]->ToString(isolate->GetCurrent());
-   char* charFileName = new char[8192];
-   (*fileName)->WriteUtf8(isolate, charFileName);
-   g_text.assign(charFileName);
+   v8::String::Utf8Value text(args[0]);
+   g_text = std::strtol(*text, nullptr, 8);
 
    if (args.Length() == 2) {
-      fileName = args[1]->ToString(isolate->GetCurrent());
-      charFileName = new char[8192];
-      (*fileName)->WriteUtf8(isolate, charFileName);
-      g_audioName.assign(charFileName);
+      v8::String::Utf8Value audioName(args[1]);
+      g_audioName = std::strtol(*audioName, nullptr, 8);
    }
 
 	int ret = NlsClient::getInstance()->setLogConfig("log-synthesizer", LogDebug);
@@ -423,35 +400,28 @@ void set(const FunctionCallbackInfo<Value>& args) {
      return;
    }
 
-    //std::string g_voice = "xiaoyun"     // 发音人, 包含"xiaoyun", "ruoxi", "xiaogang"等. 可选参数,
-    //std::short g_volumn = 100  			    // 音量, 范围是0~100, 可选参数, 默认50
-    //std::string g_format = "mp3"			  // 音频编码格式, 可选参数, 默认是wav. 支持的格式pcm, wav, mp3
-    //std::short g_sample_rate = 16000    // 音频采样率, 包含8000, 16000. 可选参数, 默认是16000
-    //std::short g_speech_rate = 500		  // 语速, 范围是-500~500, 可选参数, 默认是0
-    //std::short g_pitch_rate = -300		  // 语调, 范围是-500~500, 可选参数, 默认是0
-    //std::string g_path = "~/own/resources/audio"
-   v8::Local<v8::String> fileName;
-   fileName = args[0]->ToString(isolate->GetCurrent());
-   char* charFileName = new char[8192];
-   (*fileName)->WriteUtf8(isolate, charFileName);
-   g_voice.assign(charFileName);
+    //string g_voice = "xiaoyun"     // 发音人, 包含"xiaoyun", "ruoxi", "xiaogang"等. 可选参数,
+    //short g_volumn = 100  			    // 音量, 范围是0~100, 可选参数, 默认50
+    //g_format = "mp3"			  // 音频编码格式, 可选参数, 默认是wav. 支持的格式pcm, wav, mp3
+    //g_sample_rate = 16000    // 音频采样率, 包含8000, 16000. 可选参数, 默认是16000
+    //g_speech_rate = 500		  // 语速, 范围是-500~500, 可选参数, 默认是0
+    //g_pitch_rate = -300		  // 语调, 范围是-500~500, 可选参数, 默认是0
+    //g_path = "~/own/resources/audio"
+   v8::String::Utf8Value voice(args[0]);
+   g_voice = std::strtol(*voice, nullptr, 8);
 
-   g_volumn = args[1]->ToInteger(isolate->GetCurrent())->Value();
+   g_volumn = args[1] -> NumberValue();
 
-   fileName = args[2]->ToString(isolate->GetCurrent());
-   charFileName = new char[8192];
-   (*fileName)->WriteUtf8(isolate, charFileName);
-   g_format.assign(charFileName);
+   v8::String::Utf8Value format(args[2]);
+   g_format = std::strtol(*format, nullptr, 8);
 
-   g_sample_rate = args[3]->ToInteger(isolate->GetCurrent())->Value();
-   g_speech_rate = args[4]->ToInteger(isolate->GetCurrent())->Value();
-   g_pitch_rate = args[5]->ToInteger(isolate->GetCurrent())->Value();
+   g_sample_rate = args[3]->NumberValue();
+   g_speech_rate = args[4]->NumberValue();
+   g_pitch_rate = args[5]->NumberValue();
 
    if(args.Length() == 7) {
-      fileName = args[6]->ToString(isolate->GetCurrent());
-      charFileName = new char[8192];
-      (*fileName)->WriteUtf8(isolate, charFileName);
-      g_path.assign(charFileName);
+      v8::String::Utf8Value path(args[6]);
+      g_path = std::strtol(*path, nullptr, 8);
    }
 }
 
