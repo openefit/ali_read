@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <nan.h>
 #include <pthread.h>
 #include <unistd.h>
 #include <sys/time.h>
@@ -36,6 +37,11 @@ using v8::NewStringType;
 using v8::Object;
 using v8::String;
 using v8::Value;
+using v8::FunctionTemplate;
+using v8::Handle;
+using Nan::GetFunction;
+using Nan::New;
+using Nan::Set;
 
 //using namespace v8;
 //using namespace std;
@@ -304,62 +310,37 @@ int speechSynthesizerMultFile(const char* appkey) {
 	return 0;
 }
 
-void config(const FunctionCallbackInfo<Value>& args) {
-   Isolate* isolate = args.GetIsolate();
-   v8::HandleScope scope(isolate);
-   // 检查传入的参数的个数。
-   if (args.Length() < 3) {
-     // 抛出一个错误并传回到 JavaScript。
-     isolate->ThrowException(Exception::TypeError(
-         String::NewFromUtf8(isolate,
-                         "参数的数量错误",
-                             NewStringType::kNormal).ToLocalChecked()));
-     return;
-   }
 
-   // 检查参数的类型。
-   if (!args[0]->IsString() || !args[1]->IsString() || !args[2]->IsString()) {
-     isolate->ThrowException(Exception::TypeError(
-         String::NewFromUtf8(isolate,
-                         "参数错误",
-                             NewStringType::kNormal).ToLocalChecked()));
-     return;
+NAN_METHOD(Config) {
+   // 检查传入的参数的个数。
+   if (info.Length() < 3) {
+   // 抛出一个错误并传回到 JavaScript。
+     Nan::ThrowTypeError("参数的数量错误");
    }
-   v8::String::Utf8Value appkey(args[0]);
-   v8::String::Utf8Value akId(args[1]);
-   v8::String::Utf8Value akSecret(args[2]);
-   g_appkey = *appkey;
-   g_akId = *akId;
-   g_akSecret = *akSecret;
+   // 检查参数的类型。
+      if (!info[0]->IsString() || !info[1]->IsString() || !info[2]->IsString()) {
+      Nan::ThrowTypeError("参数错误");
+      }
+   g_appkey = *Nan::Utf8String(info[0]);
+   g_akId = *Nan::Utf8String(info[1]);
+   g_akSecret = *Nan::Utf8String(info[2]);
 }
 
-void read(const FunctionCallbackInfo<Value>& args) {
-	// 根据需要设置SDK输出日志, 可选. 此处表示SDK日志输出至log-Synthesizer.txt， LogDebug表示输出所有级别日志
-  Isolate* isolate = args.GetIsolate();
-
-   // 检查传入的参数的个数。
-   if (args.Length() < 1) {
-     // 抛出一个错误并传回到 JavaScript。
-     isolate->ThrowException(Exception::TypeError(
-         String::NewFromUtf8(isolate,
-                         "参数的数量错误",
-                             NewStringType::kNormal).ToLocalChecked()));
-     args.GetReturnValue().Set(v8::Number::New(isolate, -1));
-   }
-
-   v8::String::Utf8Value text(args[0]);
-   g_text = *text;
-
-   if (args.Length() == 2) {
-      v8::String::Utf8Value audioName(args[1]);
-      g_audioName = *audioName;
-   }
-
-	int ret = NlsClient::getInstance()->setLogConfig("log-synthesizer", LogDebug);
-	if (-1 == ret) {
-		printf("set log failed\n");
-		return;
-	}
+NAN_METHOD(Read) {
+  if (info.Length() < 1) {
+  // 抛出一个错误并传回到 JavaScript。
+    Nan::ThrowTypeError("参数的数量错误");
+  }
+  g_text = *Nan::Utf8String(info[0]);
+  if (info.Length() == 2) {
+    g_audioName = *Nan::Utf8String(info[1]);
+  }
+  // 根据需要设置SDK输出日志, 可选. 此处表示SDK日志输出至log-Synthesizer.txt， LogDebug表示输出所有级别日志
+  int ret = NlsClient::getInstance()->setLogConfig("log-synthesizer", LogDebug);
+  if (-1 == ret) {
+    printf("set log failed\n");
+    info.GetReturnValue().Set(Nan::New<v8::Number>(-1));
+  }
 
 	//启动工作线程
 	NlsClient::getInstance()->startWorkThread(4);
@@ -370,29 +351,19 @@ void read(const FunctionCallbackInfo<Value>& args) {
 	// 合成多个文本
 	// speechSynthesizerMultFile(appkey.c_str());
 	NlsClient::releaseInstance();
-	args.GetReturnValue().Set(v8::Number::New(isolate, 0));
+	info.GetReturnValue().Set(Nan::New<v8::Number>(0));
 }
 
-void set(const FunctionCallbackInfo<Value>& args) {
-   Isolate* isolate = args.GetIsolate();
-
+NAN_METHOD(set) {
    // 检查传入的参数的个数。
-   if (args.Length() < 6) {
+  if (info.Length() < 6) {
      // 抛出一个错误并传回到 JavaScript。
-     isolate->ThrowException(Exception::TypeError(
-         String::NewFromUtf8(isolate,
-                         "参数的数量错误",
-                             NewStringType::kNormal).ToLocalChecked()));
-     return;
+     Nan::ThrowTypeError("参数的数量错误");
    }
 
    // 检查参数的类型。
-   if (!args[0]->IsString() || !args[1]->IsNumber()
-       || !args[2]->IsString()) {
-     isolate->ThrowException(Exception::TypeError(
-         String::NewFromUtf8(isolate,
-                         "参数错误",
-                             NewStringType::kNormal).ToLocalChecked()));
+   if (!info[0]->IsString() || !info[1]->IsNumber() || !info[2]->IsString()) {
+     Nan::ThrowTypeError("参数错误");
      return;
    }
 
@@ -403,30 +374,24 @@ void set(const FunctionCallbackInfo<Value>& args) {
     //g_speech_rate = 500		  // 语速, 范围是-500~500, 可选参数, 默认是0
     //g_pitch_rate = -300		  // 语调, 范围是-500~500, 可选参数, 默认是0
     //g_path = "~/own/resources/audio"
-   v8::String::Utf8Value voice(args[0]);
-   g_voice = *voice;
 
-   g_volumn = args[1] -> NumberValue();
-
-   v8::String::Utf8Value format(args[2]);
-   g_format = *format;
-
-   g_sample_rate = args[3]->NumberValue();
-   g_speech_rate = args[4]->NumberValue();
-   g_pitch_rate = args[5]->NumberValue();
-
-   if(args.Length() == 7) {
-      v8::String::Utf8Value path(args[6]);
-      g_path = *path;
-   }
+  g_voice = *Nan::Utf8String(info[0]);
+  g_volumn = info[1] -> NumberValue();
+  g_format = *Nan::Utf8String(info[2]);
+  g_sample_rate = info[3]->NumberValue();
+  g_speech_rate = info[4]->NumberValue();
+  g_pitch_rate = info[5]->NumberValue();
+  if(info.Length() == 7) {
+     g_path = *Nan::Utf8String(info[6]);
+  }
 }
 
-void Initialize(Local<Object> exports) {
-  NODE_SET_METHOD(exports, "config", config);
-  NODE_SET_METHOD(exports, "read", read);
-  NODE_SET_METHOD(exports, "set", set);
+NAN_MODULE_INIT(InitAll) {
+  Set(target, New<String>("config").ToLocalChecked(),
+      GetFunction(New<FunctionTemplate>(Config)).ToLocalChecked());
+  Nan::Export(target, "read", Read);
+  NAN_EXPORT(target, set);
 }
 
-NODE_MODULE(NODE_GYP_MODULE_NAME, Initialize)
-
+NODE_MODULE(addon, InitAll)
 }
