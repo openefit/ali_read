@@ -9,11 +9,6 @@
   "scripts": {
     "install": "cmake-js compile"
   },
-  "cmake-js": {
-    "runtime": "electron",
-    "runtimeVersion": "7.1.4",
-    "arch": "x64"
-  },
   "dependencies": {
     "cmake-js": "^6.0.0",
     "nan": "^2.14.0"
