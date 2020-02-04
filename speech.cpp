@@ -89,6 +89,8 @@ std::string g_text = "未收到文字，请检查";
 std::string g_text_list [] {};
 std::string g_audioName = "0";
 
+pthread_mutex_t count_mutex;
+
 uint64_t getNow() {
 	struct timeval now;
 	gettimeofday(&now, NULL);
@@ -149,6 +151,7 @@ void OnSynthesisChannelClosed(NlsEvent* cbEvent, void* cbParam) {
     printf("OnSynthesisChannelClosed: %s\n", tmpParam->binAudioFile.c_str());
 	printf("OnSynthesisChannelClosed: %s\n", cbEvent->getAllResponse());
 	tmpParam->audioFile.close();
+	pthread_mutex_unlock(&count_mutex);
 	delete tmpParam; //识别流程结束,释放回调参数
 }
 
