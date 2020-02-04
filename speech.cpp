@@ -253,13 +253,9 @@ int speechSynthesizerFile(const char* appkey, const char* text, const unsigned i
   pthread_mutex_lock(&count_mutex);
 	//获取当前系统时间戳，判断token是否过期
     std::time_t curTime = std::time(0);
-
-    std::string iStr;
     std::string tempPath = g_path;
-    iStr.push_back((char)('0' + i));
-
     std::string p_audioFile = g_path.append("/").append(g_audioName)
-    .append("-").append(iStr).append(".mp3");
+    .append("-").append(std::to_string(i)).append(".mp3");
     g_path = tempPath;
 //    printf("after: %s", g_path.c_str());
 //    fflush(stdout);
