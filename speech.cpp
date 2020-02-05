@@ -58,11 +58,13 @@ struct ParamStruct {
 	std::string token;
 	std::string appkey;
 	std::string audioFile;
+	std::string index;
 };
 
 // 自定义事件回调参数
 struct ParamCallBack {
 	std::string binAudioFile;
+	std::string getIndex;
 	std::ofstream audioFile;
 	uint64_t startMs;
 };
@@ -148,8 +150,10 @@ void OnSynthesisTaskFailed(NlsEvent* cbEvent, void* cbParam) {
 void OnSynthesisChannelClosed(NlsEvent* cbEvent, void* cbParam) {
 	ParamCallBack* tmpParam = (ParamCallBack*)cbParam;
     // 演示如何打印/使用用户自定义参数示例
-    printf("OnSynthesisChannelClosed: %s\n", tmpParam->binAudioFile.c_str());
-	printf("OnSynthesisChannelClosed: %s\n", cbEvent->getAllResponse());
+//    printf("OnSynthesisChannelClosed: %s\n", tmpParam->binAudioFile.c_str());
+//	printf("OnSynthesisChannelClosed: %s\n", cbEvent->getAllResponse());
+  printf("%sAudio Success;\n", tmpParam->getIndex.c_str());
+  fflush(stdout);
 	tmpParam->audioFile.close();
 	pthread_mutex_unlock(&count_mutex);
 	delete tmpParam; //识别流程结束,释放回调参数
@@ -169,9 +173,9 @@ void OnBinaryDataRecved(NlsEvent* cbEvent, void* cbParam) {
 	}
 
 	// 演示如何打印/使用用户自定义参数示例
-    printf("OnBinaryDataRecved: %s\n", tmpParam->binAudioFile.c_str());
+//    printf("OnBinaryDataRecved: %s\n", tmpParam->binAudioFile.c_str());
 	const std::vector<unsigned char>& data = cbEvent->getBinaryData(); // getBinaryData() 获取文本合成的二进制音频数据
-    printf("OnBinaryDataRecved: status code=%d, task id=%s, data size=%d\n", cbEvent->getStatusCode(), cbEvent->getTaskId(), data.size());
+//    printf("OnBinaryDataRecved: status code=%d, task id=%s, data size=%d\n", cbEvent->getStatusCode(), cbEvent->getTaskId(), data.size());
     // 以追加形式将二进制音频数据写入文件
 	if (data.size() > 0) {
 		tmpParam->audioFile.write((char*)&data[0], data.size());
@@ -184,8 +188,8 @@ void OnBinaryDataRecved(NlsEvent* cbEvent, void* cbParam) {
 void OnMetaInfo(NlsEvent* cbEvent, void* cbParam) {
 	ParamCallBack* tmpParam = (ParamCallBack*)cbParam;
 	// 演示如何打印/使用用户自定义参数示例
-    printf("OnBinaryDataRecved: %s\n", tmpParam->binAudioFile.c_str());
-    printf("OnMetaInfo: task id=%s, respose=%s\n", cbEvent->getTaskId(), cbEvent->getAllResponse());
+//    printf("OnBinaryDataRecved: %s\n", tmpParam->binAudioFile.c_str());
+//    printf("OnMetaInfo: task id=%s, respose=%s\n", cbEvent->getTaskId(), cbEvent->getAllResponse());
 }
 
 // 工作线程
@@ -200,6 +204,7 @@ void* pthreadFunc(void* arg) {
 	// 1: 初始化自定义回调参数
 	ParamCallBack* cbParam = new ParamCallBack;
 	cbParam->binAudioFile = tst->audioFile;
+	cbParam->getIndex = tst->index;
 	cbParam->audioFile.open(cbParam->binAudioFile.c_str(), std::ios::binary | std::ios::out);
 
 	// 2: 创建语音识别SpeechSynthesizerRequest对象
@@ -273,7 +278,8 @@ int speechSynthesizerFile(const char* appkey, const char* text, const unsigned i
 
 	// 注意: Windows平台下，合成文本中如果包含中文，请将本CPP文件设置为带签名的UTF-8编码或者GB2312编码
 	pa.text = text;
-    pa.audioFile = p_audioFile;
+  pa.audioFile = p_audioFile;
+  pa.index = std::to_string(i);
 
 	pthread_t pthreadId;
 	// 启动一个工作线程, 用于识别
