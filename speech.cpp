@@ -77,16 +77,19 @@ std::string g_akSecret = "";
 std::string g_token = "";
 
 std::string g_path = "/home/chen/own/resources/audio";
-std::string g_voice = "ruoxi";     // 发音人, 包含"xiaoyun", "ruoxi", "xiaogang"等. 可选参数,
+std::string g_voice = "Aibao";     // 发音人, 包含"xiaoyun", "ruoxi", "xiaogang"等. 可选参数,
 short g_volumn = 100;  			    // 音量, 范围是0~100, 可选参数, 默认50
 std::string g_format = "mp3";			  // 音频编码格式, 可选参数, 默认是wav. 支持的格式pcm, wav, mp3
 short g_sample_rate = 16000;    // 音频采样率, 包含8000, 16000. 可选参数, 默认是16000
 short g_speech_rate = 500;		  // 语速, 范围是-500~500, 可选参数, 默认是0
-short g_pitch_rate = -300;		  // 语调, 范围是-500~500, 可选参数, 默认是0
+short g_pitch_rate = -100;		  // 语调, 范围是-500~500, 可选参数, 默认是0
 long g_expireTime = -1;
 
 std::string g_text = "未收到文字，请检查";
+std::string g_text_list [] {};
 std::string g_audioName = "0";
+
+pthread_mutex_t count_mutex;
 
 uint64_t getNow() {
 	struct timeval now;
@@ -148,6 +151,7 @@ void OnSynthesisChannelClosed(NlsEvent* cbEvent, void* cbParam) {
     printf("OnSynthesisChannelClosed: %s\n", tmpParam->binAudioFile.c_str());
 	printf("OnSynthesisChannelClosed: %s\n", cbEvent->getAllResponse());
 	tmpParam->audioFile.close();
+	pthread_mutex_unlock(&count_mutex);
 	delete tmpParam; //识别流程结束,释放回调参数
 }
 
@@ -245,10 +249,17 @@ void* pthreadFunc(void* arg) {
 }
 
 // 合成单个文本数据
-int speechSynthesizerFile(const char* appkey) {
+int speechSynthesizerFile(const char* appkey, const char* text, const unsigned i) {
+  pthread_mutex_lock(&count_mutex);
 	//获取当前系统时间戳，判断token是否过期
     std::time_t curTime = std::time(0);
-    std::string p_audioFile = g_path.append("/").append(g_audioName).append(".mp3");
+    std::string tempPath = g_path;
+    std::string p_audioFile = g_path.append("/").append(g_audioName)
+    .append("-").append(std::to_string(i)).append(".mp3");
+    g_path = tempPath;
+//    printf("after: %s", g_path.c_str());
+//    fflush(stdout);
+
     if (g_expireTime - curTime < 10) {
 		printf("the token will be expired, please generate new token by AccessKey-ID and AccessKey-Secret.\n");
         if (-1 == generateToken(g_akId, g_akSecret, &g_token, &g_expireTime)) {
@@ -261,7 +272,7 @@ int speechSynthesizerFile(const char* appkey) {
     pa.appkey = appkey;
 
 	// 注意: Windows平台下，合成文本中如果包含中文，请将本CPP文件设置为带签名的UTF-8编码或者GB2312编码
-	pa.text = g_text;
+	pa.text = text;
     pa.audioFile = p_audioFile;
 
 	pthread_t pthreadId;
@@ -331,7 +342,10 @@ NAN_METHOD(Read) {
   // 抛出一个错误并传回到 JavaScript。
     Nan::ThrowTypeError("参数的数量错误");
   }
-  g_text = *Nan::Utf8String(info[0]);
+//  g_text = *Nan::Utf8String(info[0]);
+//  v8::Local<v8::Array> text_list = Nan::New<v8::Array>(info[0]);
+  v8::Local<v8::Array> textArray = info[0].As<v8::Array>();
+//  g_text_list = Nan::TypedArrayContents<string>(info[0]);
   if (info.Length() == 2) {
     g_audioName = *Nan::Utf8String(info[1]);
   }
@@ -343,10 +357,13 @@ NAN_METHOD(Read) {
   }
 
 	//启动工作线程
-	NlsClient::getInstance()->startWorkThread(4);
+	NlsClient::getInstance()->startWorkThread(1);
 
-	// 合成单个文本
-	speechSynthesizerFile(g_appkey.c_str());
+  for(unsigned int i = 0; i < textArray-> Length(); i++) {
+    // 合成单个文本
+    	speechSynthesizerFile(g_appkey.c_str(),
+    	*Nan::Utf8String(Nan::Get(textArray, i).ToLocalChecked()), i);
+  }
 
 	// 合成多个文本
 	// speechSynthesizerMultFile(appkey.c_str());
@@ -355,6 +372,7 @@ NAN_METHOD(Read) {
 }
 
 NAN_METHOD(set) {
+  v8::Local<v8::Context> context = info.GetIsolate()->GetCurrentContext();
    // 检查传入的参数的个数。
   if (info.Length() < 6) {
      // 抛出一个错误并传回到 JavaScript。
@@ -376,11 +394,11 @@ NAN_METHOD(set) {
     //g_path = "~/own/resources/audio"
 
   g_voice = *Nan::Utf8String(info[0]);
-  g_volumn = info[1] -> NumberValue();
+  g_volumn = info[1]->NumberValue(context).FromJust();
   g_format = *Nan::Utf8String(info[2]);
-  g_sample_rate = info[3]->NumberValue();
-  g_speech_rate = info[4]->NumberValue();
-  g_pitch_rate = info[5]->NumberValue();
+  g_sample_rate = info[3]->NumberValue(context).FromJust();
+  g_speech_rate = info[4]->NumberValue(context).FromJust();
+  g_pitch_rate = info[5]->NumberValue(context).FromJust();
   if(info.Length() == 7) {
      g_path = *Nan::Utf8String(info[6]);
   }
